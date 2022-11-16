@@ -1,0 +1,358 @@
+
+--------------------------------------------------------------------------------------------------------
+CI SERVER - AMI LINUX 2
+--------------------------------------------------------------------------------------------------------
+sudo su
+
+-change hostname :
+hostnamectl set-hostname ci-server
+
+sudo  amazon-linux-extras install epel
+cd /etc/yum.repos.d && ll
+
+GIT
+---
+yum install git -y
+
+JAVA
+-----
+yum install java-1.8.0-openjdk -y
+or
+download java 11 for amazon linux 2
+https://docs.aws.amazon.com/corretto/latest/corretto-11-ug/amazon-linux-install.html
+sudo yum install java-11-amazon-corretto-headless
+java --version
+
+or 
+sudo  apt install openjdk-11-jdk openjdk-11-jre -y
+
+or 
+https://www.digitalocean.com/community/tutorials/how-to-install-java-with-apt-on-debian-11
+
+
+MAVEN
+------
+https://maven.apache.org/download.cgi
+
+cd /opt && \
+wget https://dlcdn.apache.org/maven/maven-3/3.8.6/binaries/apache-maven-3.8.6-bin.tar.gz && \
+tar xvf apache-maven-3.8.6-bin.tar.gz
+
+MAVEN HOME PATH = /opt/apache-maven-3.8.6
+
+or
+
+maven link: https://archive.apache.org/dist/maven/maven-3/3.8.6/binaries/
+
+cd /opt && 
+wget https://archive.apache.org/dist/maven/maven-3/3.8.6/binaries/apache-maven-3.8.6-bin.tar.gz
+tar xvf apache-maven-3.8.6-bin.tar.gz
+export PATH=$PATH:/opt/apache-maven-3.8.6/bin/
+mvn --version
+
+
+DOCKER
+-------
+yum install docker -y
+systemctl start docker 
+systemctl enable docker
+systemctl status docker  
+
+
+JENKINS
+--------
+work on port 8080
+
+install jenkins on linux
+https://www.jenkins.io/doc/book/installing/linux/
+https://www.jenkins.io/doc/book/installing/linux/#red-hat-centos
+
+jenkins linux rpm
+https://pkg.jenkins.io/redhat-stable/
+
+
+sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+cd /etc/yum.repos.d && ll 
+cat jenkins.repo
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+sudo amazon-linux-extras install epel
+sudo yum install jenkins
+
+sudo systemctl start jenkins or service jenkins start
+sudo systemctl enable jenkins
+sudo systemctl status jenkins or service jenkins status
+
+jenkins => 8080 => http://52.47.173.197:8080
+
+cat /var/lib/jenkins/secrets/initialAdminPassword
+http://35.181.54.48:8080/
+
+cd /var/lib/jenkins/workspace && ll
+
+orpheadya/****
+
+sudo usermod -a -G docker jenkins
+
+
+maven sonar integration plugin
+------------------------------
+https://docs.sonarqube.org/latest/analysis/scan/sonarscanner-for-maven/
+https://mvnrepository.com/artifact/org.sonarsource.scanner.maven/sonar-maven-plugin
+
+ <plugin>
+        <groupId>org.sonarsource.scanner.maven</groupId>
+        <artifactId>sonar-maven-plugin</artifactId>
+        <version>3.9.1.2184</version>
+ </plugin>
+
+
+PUSH IMAGE TO CI SERVER
+-----------------------
+aws ecr get-login-password --regxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+docker build -t cicd-ecr .
+
+docker tag cicd-ecr:latest 6688xxxxxx.dkr.ecr.eu-west-3.amazonaws.com/cicd-ecr:latest
+
+docker push 6688xxxxxxxxx.dkr.ecr.eu-west-3.amazonaws.com/cicd-ecr:latest
+
+
+SSH
+-----
+ls ~/.ssh/
+ssh-keygen -t rsa
+ssh-copy-id ubuntu@13.39.14.55
+cat ~/.ssh/authorized_keys
+vi ~/.ssh/authorized_keys
+cat ~/.ssh/id_rsa.pub
+
+ssh 13.39.14.55
+
+ansible -m ping dev-server
+
+
+ANSIBLE
+-------
+sudo  amazon-linux-extras install ansible2 -y
+ansible --version
+
+ll /etc/ansible/hosts
+cat /etc/ansible/hosts
+
+add group : [dev-server]
+
+[dev-server]
+13.39.14.55
+
+ansible -m ping dev-server
+
+ANSIBLE PLAYBOOK
+----------------
+
+---
+- hosts: dev-server
+  tasks:
+    - name: Estabish a login to ECR
+      shell: aws ecr get-login-password xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    - name: Pull the image from ECR to CD-derver
+      shell: docker pull 668806726900.dkr.ecr.eu-west-3.amazonaws.com/cicd-ecr:41
+    - name: Run container using the docker image
+      shell: docker run --name=cicdcontainer -d -p 8080:8080  668806726900.dkr.ecr.eu-west-3.amazonaws.com/cicd-ecr:41
+
+sudo ansible-playbook -i /etc/ansible/host /etc/ansible/playbook-ecr.yml
+
+docker image ls
+
+
+CD SERVER on UBUNTU
+-------------------------------------------------------------------------------------------------------------
+
+hostnamectl set-hostname cd-server
+sudo apt update
+sudo apt install awscli -y
+sudo apt install docker.io
+sudo service  docker start
+sudo service  docker status
+
+apt install pyton
+apt install pip
+pip install docker-py
+
+aws ecr get-login-password --region eu-west-3 | docker login --username AWS --password-stdin 6688xxxxxxxxx.dkr.ecr.eu-west-3.amazonaws.com
+
+docker container run --name=ecr-ec2 -p 8080:8080 -d 6688xxxxxxxxx.dkr.ecr.eu-west-3.amazonaws.com/cicd-ecr:latest
+docker container ls / docker ps
+docker container rm $(docker container ls -aq)
+
+
+Tools
+------------------------------------------------------------------------------------------------------------
+mobaxterm:
+https://mobaxterm.mobatek.net/download-home-edition.html
+
+putty & puttygen
+https://www.putty.org/
+https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html
+
+gitbash
+https://git-scm.com/downloads
+
+
+git config --global user.name "xxxx"
+git config --global user.password "xxxxxxx"
+git config --global user.email "example@gmail.orgg"
+git config --global credential.helper store
+git config --list --show-origin
+
+Connect to aws instance
+-----------------------------------------------------------------------------------------------------------
+ssh -i "secret-key.pem" ubuntu@ec2-13-36-38-166.eu-west-3.compute.amazonaws.com
+
+
+SONAR SERVER
+-----------------------------------------------------------------------------
+hostnamectl set-hostname ci-server
+
+sonar work on port number 9000
+
+sudo apt update
+
+Java
+-----
+sudo  apt install openjdk-11-jdk openjdk-11-jre -y
+or 
+https://www.digitalocean.com/community/tutorials/how-to-install-java-with-apt-on-debian-11
+
+Docker
+------
+sudo apt install docker.io
+
+-install sonarqube
+------------------
+https://www.sonarqube.org/downloads/
+
+sudo apt install unzip
+
+cd ~ && 
+wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-9.7.1.62043.zip
+unzip sonarqube-9.7.1.62043.zip
+
+cd /home/ubuntu/sonarqube-9.7.1.62043/bin/linux-x86-64 && sh sonar.sh start
+cd /home/ubuntu/sonarqube-9.7.1.62043/bin/linux-x86-64 && sh sonar.sh status
+
+
+chown ubuntu:ubuntu sonarqube-9.6.1.59531/ -R
+
+-sonarqube with docker 
+-----------------------
+https://hub.docker.com/_/sonarqube
+sudo docker container run --name=sonarqubecontainer -p 9000:9000 -d sonarqube:latest
+sudo docker container ls -a
+docker rm $(docker container ls -aq) 
+
+
+Pluggins to add in jenkins:
+---------------------------
+Add plugin SonarQube Scanner 
+Add plugin cloudbees aws  
+Add plugin amazon ecr 
+Add plugin docker  
+Add plugin docker pipeline
+add plugin maven 
+add plugin local 
+
+
+Fire from ci-server
+mvn sonar:sonar -Dsonar.host.url=http://13.36.38.166:9000 -Dsonar.login=sonar-token
+mvn sonar:sonar -Dsonar.host.url=http://13.36.38.166:9000 -Dsonar.login=xxx
+
+jenkins-sonar-webhook
+http://13.39.21.21:8080/sonarqube-webhook/
+
+sonarqube scanner for jenkins pipeline:
+https://www.jenkins.io/doc/pipeline/steps/sonar/
+https://docs.sonarqube.org/latest/analysis/scan/sonarscanner-for-jenkins/
+
+
+----------------DokerFile----------------------------------
+
+FROM java:8
+COPY target/cicd-project-test-0.0.1-SNAPSHOT.jar app.jar
+ENTRYPOINT ["java","-jar","app.jar"]
+
+
+
+Declarative Pipeline
+------------------------------------------------------------------------------------------------------
+pipeline {
+    
+ agent any
+ 
+ tools {
+    maven 'maven-3.8.6'
+ }
+ 
+ environment {
+     registry = '6688xxxxxxxx.dkr.ecr.eu-west-3.amazonaws.com/cicd-ecr'
+     registryCredential =  'jenkins-ecr-user-credential'
+     dockerimage = ''
+ }
+ 
+ stages {
+     
+    stage('Checkout the project') {
+        steps {
+             git branch: 'pipeline', url: 'https://github.com/oadya/cicd-project-test.git'
+        }
+    }
+    
+    stage('Build the pacjakge') {
+        steps {
+                sh 'mvn clean package'
+        }
+    }
+    
+    stage("Sonar Quality Check") {
+        steps {
+            script{
+              withSonarQubeEnv(installationName : 'sonar-9', credentialsId : 'jenkins-sonar-tocken') {
+                sh 'mvn sonar:sonar'
+              }
+            timeout(time: 1, unit: 'HOURS') {
+              def qg = waitForQualityGate()
+              if (qg.status != 'OK') {
+                  error "Pipeline aborted due to quality gate failure: ${qg.status}"
+              }
+            }
+           }
+        }
+    }
+
+    stage("Building the image") {
+        steps {
+            script {
+               dockerImage = docker.build registry + ":$BUILD_NUMBER"
+            }
+        }
+    }
+    
+    stage('Deploy Image to AWS ECR') {
+        steps{
+            script {
+                docker.withRegistry( "http://" + registry, "ecr:eu-west-3:" + registryCredential ){
+                dockerImage.push()
+                }
+            }
+        }
+    }
+  }
+  
+     post {
+       success {
+        mail bcc: '', subject: "Pipeline succes", body: "Pipeline build successfully", cc: '', from: 'orphe.adya@gmail.com', to: 'orphe.adya@gmail.com', replyTo: ''			 
+      }
+      failure {
+          mail bcc: '', subject: "Pipeline failled", body: "Pipeline failled", cc: '', from: 'orphe.adya@gmail.com', to: 'orphe.adya@gmail.com', replyTo: ''
+      }
+    }
+}
