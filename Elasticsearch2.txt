@@ -1,0 +1,152 @@
+Moteur de recherche distribué
+
+Base de données NoSQl
+
+Serveur de recherche opensource basé sur Apache Lucene
+
+Ecrit en Java, multiplateforme
+
+Scalable, Architecture distribuée, evolulue en fonction de la volumetrie
+
+Communication avec ES à travers une API REST
+
+Curl -X <Rest verb> <Node>:<Port>/<Index>/<Type>/<ID>
+http://localhost:9200/<index>/<type>
+
+
+Shemaless JSON documents
+
+Recherche en temps réel NRT(Near Real Time)
+
+
+ES est une Base de données nosql
+
+Nosql : permet de stocké de gros volumes, facilite la creation d'un cluster de machine
+
+Ex bases nosql: 
+
+ElasticSearch : Moteur de recherche sur des donnes textuelle, numeric, horodaté, geographique, souhaite faire des recherches complexes sur des volumes très important, performance importante en matière de recherche
+
+Casandra : gros volume de donnée
+
+MongoDB : base nosql, très polyvalant
+
+Redis: In memory database, très rapide, Base de donnée Nosql Key-value
+
+Object sont stocké sous forme de document
+Document : equivalent des tables dans les bases sql
+
+Développé en Java, donc focntionne sur tous les Os qui peuvent faire tourné Java
+
+Port d'ecoute 9200
+
+Elasticsearch est un moteur de recherche et d’analytique distribué basé sur Apache Lucene. Depuis sa sortie en 2010, Elasticsearch est rapidement devenu le moteur de recherche le plus populaire. Il est couramment utilisé pour l'analytique des journaux, la recherche en texte intégral, la veille sécuritaire, l'analytique commerciale et l'intelligence opérationnelle.
+
+Elasticsearch est un moteur de recherche et d’analyse open source qui s’appuie sur la bibliothèque Apache Lucene. Les développeurs peuvent utiliser Elasticsearch pour ajouter des capacités de recherche extrêmement évolutives à leurs applications.
+
+
+Initialement lancé en 2010 par Elastic, Elasticsearch a été conçu comme une solution distribuée en Java pour apporter des fonctionnalités de recherche plein texte dans des documents JSON sans schéma à travers différents types de bases de données.
+
+Apache Lucene est une bibliothèque de moteur de recherche libre et open source, entièrement écrite en Java. Lucene est surtout reconnue pour son implémentation des moteurs de recherche. Plusieurs projets, tels qu’Elasticsearch, étendent ses capacités.
+
+
+
+Recherche avec Curl :
+-------------------
+option -d = data
+
+curl -XPUT 'localhost:9200/get-together/_doc/1?pretty' -H 'Content-Type: application/json' -d '{"name": "Elasticsearch Denver", "organizer": "Lee"}'
+
+vérifier le contenu de index
+http://localhost:9200/get-together?pretty 
+curl -GET 'http://localhost:9200/get-together?pretty'
+
+Voir ou récupérer le mapping
+http://localhost:9200/get-together/_mapping/_doc?pretty
+en env de prod, il faut avoir un schema fixe, ne pas utiliser le mapping par defaut
+
+
+Requete de Recherche: tous les documents qui font référence au mot clé elasticsearch
+http://localhost:9200/get-together/_doc/_search?q=elasticsearch&pretty 
+curl -XGET 'http://localhost:9200/get-together/_doc/_search?q=elasticsearch&pretty' 
+
+Recherche Multi index
+http://localhost:9200/get-together,other-index/_doc/_search?q=elasticsearch&pretty 
+curl -XGET 'http://localhost:9200/get-together,other-index/_doc/_search?q=elasticsearch&pretty'
+
+with ignore_unavailable flag : ignorer les index qui n'existe pas
+http://localhost:9200/get-together,other-index/_doc/_search?q=elasticsearch&ignore_unavailable=true&pretty 
+curl -XGET 'http://localhost:9200/get-together,other-index/_doc/_search?q=elasticsearch&ignore_unavailable=true&pretty'
+
+Recherche dans tous les index
+http://localhost:9200/_search?q=elasticsearch&pretty 
+curl -XGET 'http://localhost:9200/_search?q=elasticsearch&pretty'
+
+
+Recherche avec body pour requetes complexes
+-------------------------------------------
+curl -XPOST 'localhost:9200/get-together/_doc/_search?pretty' -H 'Content-Type: application/json' -d '{"query": {"query_string":{"query":"elasticsearch"}}}'
+
+Recherche avec body et default field operator: default name, default operator
+curl -XPOST 'localhost:9200/get-together/_doc/_search?pretty' -H 'Content-Type: application/json' -d '{"query": {"query_string":{"query":"elasticsearch san francisco", "default_field":"name", "default_operator":"AND"}}}'
+
+Recherche avec la query term
+curl -XPOST 'localhost:9200/get-together/_doc/_search?pretty' -H 'Content-Type: application/json' -d '{"query": {"term":{"name":"elasticsearch"}}}'
+
+Recherche avec body et filtre
+curl -XPOST 'localhost:9200/get-together/_doc/_search?pretty' -H 'Content-Type: application/json' -d '{"query":{"bool":{"filter":{"term":{"name":"elasticsearch"}}}}}'
+
+Recherche aggrégation
+curl -XPOST 'localhost:9200/get-together/_doc/_search?pretty' -H 'Content-Type: application/json' -d '{"aggregations":{"organizers":{"terms":{"field":"organizer"}}}}'
+
+curl -XPUT 'localhost:9200/get-together/_mapping/_doc?pretty' -H 'Content-Type: application/json' -d '{
+  "properties": {
+    "organizer": { 
+      "type":     "text",
+      "fielddata": true
+    }
+  }
+}'
+
+Recuperer un document avec son ID
+http://localhost:9200/get-together/_doc/1?pretty 
+ou curl -GET 'http://localhost:9200/get-together/_doc/1?pretty'
+
+
+
+Interpretation des resultats:
+-----------------------------
+took : temps d'exécution de la recherche e ms
+_shard : nombre de fragments qui ont répondu à la requête
+failed : nombre de fragment qui étaient down (0 = tous les fragments qui contenanit notre ducument ont pu répondre)
+hits : dans cet attrubut que se trouve les documents
+score: score du document, score de pertinance
+
+Pluggin ES
+----------
+elasticsearch extension
+HEAD
+
+https://medium.com/@reshra3893/a-beginners-guide-to-elasticsearch-queries-d0205512de2d
+https://medium.com/expedia-group-tech/getting-started-with-elastic-search-6af62d7df8dd
+https://medium.com/@emredalc/elasticsearch-architecture-1-91a145a5108b
+https://devopsideas.com/different-elasticsearch-components-and-what-they-mean-in-5-mins/
+https://blog.miraclesoft.com/find-answers-that-matter-in-real-time-with-elasticsearch/#respond
+
+
+https://www.elastic.co/blog/how-to-keep-elasticsearch-synchronized-with-a-relational-database-using-logstash
+https://www.elastic.co/search-labs/blog/elasticsearch-logstash-ingest-data
+https://www.care247.tech/blog/elk-stack-get-started-with-elasticsearch-logstash-kibana-beats-860/details
+https://medium.com/codeelevation/synchronize-a-postgresql-database-with-elasticsearch-using-logstash-docker-and-docker-compose-a0b77573713b
+https://medium.com/@amin.mirzaee/logstash-pipeline-from-sql-server-to-elastic-search-17c05a6b4a1e
+https://medium.com/@batuhannarci/how-to-keep-sync-elasticsearch-with-mysql-relational-data-631b09270ff8
+https://betterstack.com/community/questions/how-to-integrate-elasticsearch-with-mysql/
+https://medium.com/orion-innovation-techclub/elastic-stack-architecture-c2a04f90c6f1
+https://www.elastic.co/blog/logstash-jdbc-input-plugin
+https://logz.io/learn/complete-guide-elk-stack/#logstash
+
+
+
+
+
+
